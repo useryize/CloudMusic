@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>网易云音乐开放平台 · 接口能力说明</title>
+<style>
+  :root{
+    --red:#ec4141;
+    --red-soft:#fff1f1;
+    --ink:#15181d;
+    --ink-2:#3d4450;
+    --ink-3:#6b7280;
+    --line:#e6e8ec;
+    --bg:#fbfbfc;
+    --card:#ffffff;
+    --ok:#0f9d58;
+    --ok-bg:#eaf7ef;
+    --warn:#b26a00;
+    --warn-bg:#fff6e5;
+    --no:#9aa0a6;
+    --no-bg:#f1f2f4;
+    --code-bg:#f5f6f8;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased;
+  }
+  code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+
+  /* ---------- hero ---------- */
+  .hero{
+    background:
+      radial-gradient(900px 380px at 82% -12%, rgba(236,65,65,.16), transparent 62%),
+      linear-gradient(180deg,#1b1d22 0%,#23262d 100%);
+    color:#fff;padding:56px 28px 46px;position:relative;overflow:hidden;
+  }
+  .hero::after{
+    content:"";position:absolute;inset:auto 0 0 0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+  }
+  .hero-in{max-width:1120px;margin:0 auto}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:#ffb4b4;border:1px solid rgba(255,180,180,.35);
+    padding:5px 12px;border-radius:999px;background:rgba(236,65,65,.10);
+  }
+  .hero h1{
+    font-size:36px;line-height:1.28;margin:18px 0 10px;font-weight:700;letter-spacing:-.4px;
+  }
+  .hero h1 em{font-style:normal;color:#ff8b8b}
+  .hero p.lead{
+    margin:0;max-width:760px;color:#c3c7cf;font-size:15.5px;
+  }
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px}
+  .stat{
+    background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10);
+    border-radius:12px;padding:16px 18px;
+  }
+  .stat b{display:block;font-size:27px;font-weight:700;letter-spacing:-.5px;line-height:1.2}
+  .stat span{font-size:12.5px;color:#9aa0aa}
+  .stat i{font-style:normal;font-size:13px;color:#ff8b8b;margin-left:3px}
+
+  /* ---------- layout ---------- */
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px 90px}
+  .cols{display:grid;grid-template-columns:206px minmax(0,1fr);gap:46px;align-items:start}
+  nav.toc{position:sticky;top:26px;padding-top:38px;font-size:13.5px}
+  nav.toc .t{font-size:11px;letter-spacing:.14em;color:var(--ink-3);text-transform:uppercase;margin-bottom:10px;padding-left:11px}
+  nav.toc a{
+    display:block;color:var(--ink-2);text-decoration:none;padding:6px 11px;
+    border-left:2px solid transparent;border-radius:0 6px 6px 0;transition:.16s;
+  }
+  nav.toc a:hover{color:var(--red);background:var(--red-soft)}
+  nav.toc a.on{color:var(--red);border-left-color:var(--red);background:var(--red-soft);font-weight:600}
+
+  main{padding-top:38px;min-width:0}
+  section{padding-top:30px;margin-bottom:34px;scroll-margin-top:20px}
+  section:first-child{padding-top:0}
+  h2{
+    font-size:22px;margin:0 0 6px;font-weight:700;letter-spacing:-.3px;
+    display:flex;align-items:baseline;gap:10px;
+  }
+  h2 .n{
+    font-size:12px;color:var(--red);font-weight:600;
+    background:var(--red-soft);border-radius:5px;padding:2px 7px;letter-spacing:.04em;
+  }
+  .sub{color:var(--ink-3);font-size:13.5px;margin:0 0 20px}
+  h3{font-size:15.5px;margin:26px 0 10px;font-weight:650}
+  p{margin:0 0 13px;color:var(--ink-2)}
+  strong{color:var(--ink);font-weight:650}
+  code.i{
+    background:var(--code-bg);border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;color:#b1372f;word-break:break-all;
+  }
+
+  /* ---------- callout ---------- */
+  .note{
+    border-left:3px solid var(--red);background:#fff;border-radius:0 10px 10px 0;
+    padding:15px 18px;margin:18px 0;box-shadow:0 1px 2px rgba(20,24,30,.04);
+    font-size:14px;color:var(--ink-2);
+  }
+  .note b{color:var(--ink)}
+
+  /* ---------- capability cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cap{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;
+    transition:.18s;position:relative;
+  }
+  .cap:hover{border-color:#f0c9c9;box-shadow:0 6px 18px rgba(20,24,30,.06);transform:translateY(-1px)}
+  .cap .hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .cap h4{margin:0;font-size:14.5px;font-weight:650}
+  .cap .n{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+  .cap ul{margin:8px 0 0;padding-left:0;list-style:none;font-size:13px;color:var(--ink-2)}
+  .cap li{padding:2px 0 2px 15px;position:relative}
+  .cap li::before{content:"";position:absolute;left:2px;top:10px;width:5px;height:5px;border-radius:50%;background:#f0b6b6}
+  .cap .ep{
+    display:block;margin-top:10px;font-size:11.5px;color:#8a6b6b;background:#fdf6f6;
+    border:1px solid #f6e3e3;border-radius:6px;padding:5px 8px;word-break:normal;overflow-wrap:break-word;line-height:1.6;
+  }
+
+  /* ---------- table ---------- */
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
+  th{
+    text-align:left;padding:11px 14px;background:#f7f8f9;color:var(--ink-3);
+    font-weight:600;font-size:12px;letter-spacing:.03em;border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  td{padding:11px 14px;border-bottom:1px solid #f1f2f4;color:var(--ink-2);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fcfcfd}
+  td:first-child{color:var(--ink);font-weight:550}
+
+  .badge{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:999px;font-weight:600;white-space:nowrap}
+  .b-ok{color:var(--ok);background:var(--ok-bg)}
+  .b-warn{color:var(--warn);background:var(--warn-bg)}
+  .b-no{color:#7a7f87;background:var(--no-bg)}
+
+  /* ---------- bar chart ---------- */
+  .bars{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px 20px 14px}
+  .bar-row{display:grid;grid-template-columns:110px 1fr 62px;align-items:center;gap:12px;margin-bottom:10px;font-size:13px}
+  .bar-row .lab{color:var(--ink-2);white-space:nowrap}
+  .track{height:9px;background:#f2f3f5;border-radius:999px;overflow:hidden}
+  .fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#f06565,#ec4141)}
+  .fill.mute{background:linear-gradient(90deg,#cfd2d7,#b9bdc4)}
+  .bar-row .num{text-align:right;color:var(--ink-3);font-size:12.5px;font-variant-numeric:tabular-nums}
+  .legend{font-size:12px;color:var(--ink-3);margin-top:6px;display:flex;gap:16px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+  /* ---------- flow ---------- */
+  .flow{background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px;overflow-x:auto}
+  .flow-in{display:flex;align-items:stretch;gap:0;min-width:640px}
+  .step{
+    flex:1;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fcfcfd;
+    position:relative;
+  }
+  .step b{display:block;font-size:13px;margin-bottom:3px}
+  .step span{font-size:11.5px;color:var(--ink-3);line-height:1.5;display:block}
+  .step code{font-size:10.5px;color:#a34b45;display:block;margin-top:5px;word-break:normal;overflow-wrap:break-word;line-height:1.6}
+  .arrow{display:flex;align-items:center;padding:0 7px;color:#cfd2d7;font-size:15px;flex:none}
+
+  /* ---------- kanban ---------- */
+  .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .no-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 16px 14px;border-top:3px solid #d9dbe0}
+  .no-card b{display:flex;align-items:center;gap:7px;font-size:14px;margin-bottom:6px}
+  .no-card b em{font-style:normal;font-size:11px;color:#7a7f87;background:var(--no-bg);border-radius:999px;padding:1px 7px;font-weight:600}
+  .no-card p{font-size:12.8px;margin:0;color:var(--ink-3);line-height:1.7}
+
+  /* ---------- checklist ---------- */
+  .check{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 20px}
+  .check .li{display:flex;gap:12px;padding:13px 0;border-bottom:1px dashed #eceef1;font-size:13.8px;color:var(--ink-2)}
+  .check .li:last-child{border-bottom:none}
+  .check .li .ic{
+    flex:none;width:20px;height:20px;border-radius:6px;background:var(--ok-bg);color:var(--ok);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-top:2px;
+  }
+  .check .li b{color:var(--ink)}
+
+  footer{
+    max-width:1120px;margin:0 auto;padding:26px 28px 50px;color:var(--ink-3);font-size:12.5px;
+    border-top:1px solid var(--line);
+  }
+  footer a{color:var(--ink-3)}
+
+  @media (max-width:900px){
+    .cols{grid-template-columns:1fr;gap:0}
+    nav.toc{display:none}
+    .grid,.cards3{grid-template-columns:1fr}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .hero h1{font-size:27px}
+    .hero{padding:40px 20px 34px}
+    .wrap{padding:0 20px 60px}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-in">
+    <span class="eyebrow">网易云音乐开放平台 · 能力调研</span>
+    <h1>这些接口能做到什么，<br>做不到什么，<em>一页说清</em></h1>
+    <p class="lead">
+      基于官方文档中心 368 篇正文（站点索引 554 条）逐条提取，覆盖路径、入参、出参、错误码。
+      下面每一条接口路径都来自官方原文，不是推测。
+    </p>
+    <div class="stats">
+      <div class="stat"><b>368<i>篇</i></b><span>去重后接口文档</span></div>
+      <div class="stat"><b>554<i>条</i></b><span>站点索引条目</span></div>
+      <div class="stat"><b>8<i>个</i></b><span>文档板块</span></div>
+      <div class="stat"><b>146<i>个</i></b><span>个人可用音乐接口</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="cols">
+
+  <nav class="toc">
+    <div class="t">目录</div>
+    <a href="#s1" class="on">一句话结论</a>
+    <a href="#s2">能力全景</a>
+    <a href="#s3">功能对标</a>
+    <a href="#s4">三条核心链路</a>
+    <a href="#s5">参数与限制</a>
+    <a href="#s6">做不到的事</a>
+    <a href="#s7">可以做什么</a>
+    <a href="#s8">接口速查</a>
+  </nav>
+
+  <main>
+
+    <!-- ========== 1 ========== -->
+    <section id="s1">
+      <h2><span class="n">01</span>一句话结论</h2>
+      <p class="sub">先给判断，再给证据。</p>
+
+      <div class="note">
+        <b>做一个「像网易云音乐的播放器客户端」—— 官方接口完全够用。</b><br>
+        搜索、推荐、歌单、播放、歌词、评论、收藏、播放记录、播客、一起听，全都有对应接口，
+        体验可以做到接近原生。但它<b>不是</b>一个「音乐平台」的底座：
+        没有上传、没有动态私信、没有建歌单的能力。
+      </div>
+
+      <p>
+        换句话说：<strong>你能当网易云的前端，不能当它的竞争对手。</strong>
+        曲库、版权、账号体系都留在网易云那边，你的产品是它内容的一个新入口。
+      </p>
+    </section>
+
+    <!-- ========== 2 ========== -->
+    <section id="s2">
+      <h2><span class="n">02</span>能力全景</h2>
+      <p class="sub">官方文档分 8 个板块，但个人开发者真正能用的是前两块。</p>
+
+      <div class="bars">
+        <div class="bar-row">
+          <span class="lab">音乐 API</span>
+          <div class="track"><div class="fill" style="width:39.7%"></div></div>
+          <span class="num">146 篇</span>
+        </div>
+        <div class="bar-row">
+          <span class="lab">定制 API</span>
+          <div class="track"><div class="fill mute" style="width:27.7%"></div></div>
+          <span class="num">102 篇</span>
+        </div>
+        <div class="bar-row">
+          <span class="lab">播客 API</span>
+          <div class="track"><div class="fill" style="width:17.7%"></div></div>
+          <span class="num">65 篇</span>
+        </div>
+        <div class="bar-row">
+          <span class="lab">SDK 文档</span>
+          <div class="track"><div class="fill mute" style="width:6.8%"></div></div>
+          <span class="num">25 篇</span>
+        </div>
+        <div class="bar-row">
+          <span class="lab">厂商接入</span>
+          <div class="track"><div class="fill mute" style="width:3.8%"></div></div>
+          <span class="num">14 篇</span>
+        </div>
+        <div class="bar-row">
+          <span class="lab">CMAPI</span>
+          <div class="track"><div class="fill mute" style="width:2.7%"></div></div>
+          <span class="num">10 篇</span>
+        </div>
+        <div class="bar-row">
+          <span class="lab">个人接入指南</span>
+          <div class="track"><div class="fill" style="width:1.4%"></div></div>
+          <span class="num">5 篇</span>
+        </div>
+        <div class="legend">
+          <span><i style="background:#ec4141"></i>个人开发者可申请</span>
+          <span><i style="background:#b9bdc4"></i>商务合作 / 厂商向，个人大概率拿不到</span>
+        </div>
+      </div>
+
+      <h3>八个能力域，具体能做什么</h3>
+      <div class="grid">
+
+        <div class="cap">
+          <div class="hd"><h4>搜索与发现</h4><span class="n">7 个维度</span></div>
+          <ul>
+            <li>歌曲 / 专辑 / 歌手 / 歌单 / MV 分别搜索</li>
+            <li>综合搜索一次返回多类型结果</li>
+            <li>热搜榜、热词、输入提示词（联想）</li>
+            <li>语音搜索、多槽位搜索（IOT 场景）</li>
+          </ul>
+          <span class="ep">/search/song/get/v3 · /complex/search · /search/suggest/keyword/get/v2</span>
+        </div>
+
+        <div class="cap">
+          <div class="hd"><h4>推荐引擎</h4><span class="n">官方最强的一块</span></div>
+          <ul>
+            <li>每日推荐、日推 MIX（按风格/相似艺人拆分）</li>
+            <li>私人漫游（含场景模式）、雷达歌单</li>
+            <li>心动模式、相似歌曲、推荐更多歌曲</li>
+            <li>首页 banner、场景音乐标签</li>
+          </ul>
+          <span class="ep">/recommend/songlist/get/v2 · /song/play/intelligence/get · /playlist/radar/get</span>
+        </div>
+
+        <div class="cap">
+          <div class="hd"><h4>曲库浏览</h4><span class="n">30+ 歌单接口</span></div>
+          <ul>
+            <li>歌单详情、批量详情、歌曲列表 v5</li>
+            <li>歌单广场标签筛选（风格/场景/语种）</li>
+            <li>专辑、艺人、艺人热门歌曲</li>
+            <li>各类榜单、新歌速递</li>
+          </ul>
+          <span class="ep">/playlist/detail/get/v2 · /playlist/song/list/get/v5 · /toplist/get/v2</span>
+        </div>
+
+        <div class="cap">
+          <div class="hd"><h4>播放内核</h4><span class="n">唯一要给地址的地方</span></div>
+          <ul>
+            <li>单曲 / 批量取播放地址，最高 1999kbps</li>
+            <li>音质协商：拿不到自动降级</li>
+            <li>「无法播放 toast 文案」接口，直接给你提示语</li>
+            <li>播放数据回传（上线前要过验收）</li>
+          </ul>
+          <span class="ep">/song/playurl/get/v2 · /batch/song/playurl/get · /song/text/play/get/v2</span>
+        </div>
+
+        <div class="cap">
+          <div class="hd"><h4>歌词</h4><span class="n">含逐字</span></div>
+          <ul>
+            <li>普通 LRC 歌词（含翻译、罗马音）</li>
+            <li>逐字歌词，可做卡拉 OK 式滚动</li>
+            <li>歌词与歌曲信息绑定返回，不用二次请求</li>
+          </ul>
+          <span class="ep">/song/lyric/get/v2 · /song/lyric/word/by/word/get</span>
+        </div>
+
+        <div class="cap">
+          <div class="hd"><h4>账号与资产</h4><span class="n">用户是网易云的</span></div>
+          <ul>
+            <li>匿名登录、二维码登录、H5 唤端登录</li>
+            <li>用户资料、实名状态、关注关系</li>
+            <li>收藏的歌单/专辑/艺人、已购歌曲与专辑</li>
+            <li>最近播放、听歌排行、跨端续播、网盘歌曲</li>
+          </ul>
+          <span class="ep">/oauth2/login/anonymous · /user/profile/get/v2 · /query/song/record/get</span>
+        </div>
+
+        <div class="cap">
+          <div class="hd"><h4>互动与社交</h4><span class="n">只有评论是完整的</span></div>
+          <ul>
+            <li>评论列表、热门评论、二级回复</li>
+            <li>发布一级评论、回复别人</li>
+            <li>关注/取关、关注关系判断</li>
+            <li>一起听：建房、结算数据（14 个接口）</li>
+          </ul>
+          <span class="ep">/comments/get/v2 · /openapi/v1/resource/comments/add · /listen/together/room/create</span>
+        </div>
+
+        <div class="cap">
+          <div class="hd"><h4>播客</h4><span class="n">65 个接口，意外地完整</span></div>
+          <ul>
+            <li>播客详情、单集、播单、分类与榜单</li>
+            <li>声音播放地址、下载地址</li>
+            <li>收藏播客、收藏单集、更新提醒</li>
+            <li>AI 快讯（短音频摘要）</li>
+          </ul>
+          <span class="ep">/openapi/podcast/play/url/get/v1 · /openapi/podcast/subscribe</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========== 3 ========== -->
+    <section id="s3">
+      <h2><span class="n">03</span>功能对标</h2>
+      <p class="sub">拿网易云客户端的功能逐条对，标出能不能还原。</p>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>客户端功能</th><th style="width:88px">支持度</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>搜索（歌/专辑/歌手/歌单/MV）</td><td><span class="badge b-ok">完整</span></td><td>五个维度独立接口，另有综合搜索一次拿全</td></tr>
+            <tr><td>首页推荐 / 每日推荐</td><td><span class="badge b-ok">完整</span></td><td>每日推荐、日推 MIX、推荐歌单、banner 都有</td></tr>
+            <tr><td>私人漫游 / 心动模式 / 雷达</td><td><span class="badge b-ok">完整</span></td><td>含场景模式，可按心情切换</td></tr>
+            <tr><td>播放（含音质切换）</td><td><span class="badge b-ok">完整</span></td><td>128→1999kbps，另有臻音/母带/环绕声等 level</td></tr>
+            <tr><td>歌词滚动</td><td><span class="badge b-ok">完整</span></td><td>普通 + 逐字，可做卡拉 OK 效果</td></tr>
+            <tr><td>歌单浏览与收藏</td><td><span class="badge b-ok">完整</span></td><td>含广场标签筛选、收藏/取消收藏</td></tr>
+            <tr><td>红心 / 加歌到歌单</td><td><span class="badge b-ok">完整</span></td><td>批量加歌、批量删除、红心切换</td></tr>
+            <tr><td>评论区</td><td><span class="badge b-ok">完整</span></td><td>看列表、看热门、发评论、回复都能做</td></tr>
+            <tr><td>专辑页 / 艺人页</td><td><span class="badge b-ok">完整</span></td><td>详情、歌曲列表、热门歌曲齐全</td></tr>
+            <tr><td>播放记录 / 听歌排行</td><td><span class="badge b-ok">完整</span></td><td>歌曲/专辑/歌单三类记录 + 跨端续播</td></tr>
+            <tr><td>播客 / 电台</td><td><span class="badge b-ok">完整</span></td><td>65 个接口，和音乐几乎平级</td></tr>
+            <tr><td>一起听</td><td><span class="badge b-warn">部分</span></td><td>能建房和结算，同步播放要自己实现</td></tr>
+            <tr><td>MV</td><td><span class="badge b-warn">部分</span></td><td>只有列表/详情/搜索，<b>没有播放地址</b></td></tr>
+            <tr><td>关注别人</td><td><span class="badge b-warn">部分</span></td><td>能关注、能看关注列表，<b>没有粉丝列表</b></td></tr>
+            <tr><td>下载到本地</td><td><span class="badge b-warn">部分</span></td><td>有下载地址接口，但受账号会员权益限制</td></tr>
+            <tr><td>新建歌单</td><td><span class="badge b-no">不支持</span></td><td>只能往已有歌单加歌，<b>不能创建新歌单</b></td></tr>
+            <tr><td>上传歌曲 / 发作品</td><td><span class="badge b-no">不支持</span></td><td>全目录 0 个音频上传接口</td></tr>
+            <tr><td>动态 / 云村</td><td><span class="badge b-no">不支持</span></td><td>动态 0 条、私信 0 条</td></tr>
+            <tr><td>私信 / 粉丝体系</td><td><span class="badge b-no">不支持</span></td><td>无法构建自己的社交关系链</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========== 4 ========== -->
+    <section id="s4">
+      <h2><span class="n">04</span>三条核心链路</h2>
+      <p class="sub">真正动手时，绕不开的就是这三条。顺序不能反。</p>
+
+      <h3>链路一：授权（必须先做）</h3>
+      <div class="flow">
+        <div class="flow-in">
+          <div class="step">
+            <b>1. 匿名登录</b>
+            <span>拿基础 accessToken，能调大部分只读接口</span>
+            <code>/oauth2/login/anonymous</code>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <b>2. 取二维码</b>
+            <span>生成 key 和二维码图，给用户用网易云 App 扫</span>
+            <code>/user/oauth2/qrcodekey/<wbr>get/v2</code>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <b>3. 轮询状态</b>
+            <span>扫到 → 确认 → 换正式 token</span>
+            <code>轮询直到 code=200</code>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <b>4. 刷新</b>
+            <span>用 refreshToken 续期，别等过期才处理</span>
+            <code>有效期以返回字段为准</code>
+          </div>
+        </div>
+      </div>
+      <p style="margin-top:12px;font-size:13px;color:var(--ink-3)">
+        匿名态也能拿到「每日推荐」的默认数据，可以先做出首页再补登录。
+      </p>
+
+      <h3>链路二：播放（决定体验上限）</h3>
+      <div class="flow">
+        <div class="flow-in">
+          <div class="step">
+            <b>搜索 / 拿歌单</b>
+            <span>先拿到歌曲 id 列表</span>
+            <code>/search/song/get/v3</code>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <b>取播放地址</b>
+            <span>带上目标音质，拿不到会降级返回</span>
+            <code>/song/playurl/get/v2</code>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <b>拿不到就解释</b>
+            <span>调 toast 接口，把原因原样展示给用户</span>
+            <code>/song/text/play/get/v2</code>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <b>播放并上报</b>
+            <span>播放行为要回传，这是上线验收项</span>
+            <code>/batch/play/data/record</code>
+          </div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:14px">
+        <b>播放地址有三个硬约束，会直接决定架构：</b><br>
+        ① 带签名，有效期短（普通歌曲约 25 分钟，车机类 1 天）；
+        ② 有防盗链，不能缓存、不能转分发、不能攒成自己的音源库；
+        ③ 地址可能为空 —— 这不是 bug，是版权或权益问题，必须走 toast 接口解释。
+      </div>
+
+      <h3>链路三：歌单（最容易被忽略的断点）</h3>
+      <div class="flow">
+        <div class="flow-in">
+          <div class="step">
+            <b>广场挑歌单</b>
+            <span>按标签筛选，拿歌单 id</span>
+            <code>/playlist/square/tag/get</code>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <b>详情 + 歌曲</b>
+            <span>v2 拿详情，v5 拿歌曲列表</span>
+            <code>/playlist/song/list/<wbr>get/v5</code>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <b>收藏 / 加歌</b>
+            <span>收藏歌单，或往自己已有歌单里批量加歌</span>
+            <code>/playlist/sub/v2 · /song/<wbr>batch/like</code>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step" style="border-color:#f3d6d6;background:#fffafa">
+            <b>但不能建歌单</b>
+            <span>没有 create 接口，这是产品设计的天花板</span>
+            <code>— 无此接口 —</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 5 ========== -->
+    <section id="s5">
+      <h2><span class="n">05</span>参数与限制</h2>
+      <p class="sub">接官方最容易卡住的地方，一次说清。</p>
+
+      <h3>请求结构</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th style="width:150px">项目</th><th>规则</th></tr></thead>
+          <tbody>
+            <tr><td>请求域名</td><td><code class="i">https://openapi.music.163.com</code></td></tr>
+            <tr><td>请求方式</td><td>绝大多数同时支持 GET / POST</td></tr>
+            <tr><td>业务参数</td><td>全部塞进 <code class="i">bizContent</code>，值是 <b>JSON 字符串</b>，需要 URL 编码</td></tr>
+            <tr><td>公共参数</td><td><code class="i">appId</code> <code class="i">accessToken</code> <code class="i">signType=RSA_SHA256</code> <code class="i">timestamp</code>（毫秒）<code class="i">device</code>（JSON 串）<code class="i">sign</code></td></tr>
+            <tr><td>签名算法</td><td>剔除空值和 sign → 参数名按 ASCII 升序 → 拼 <code class="i">k=v&amp;k=v</code> → SHA256withRSA → Base64</td></tr>
+            <tr><td>返回判定</td><td><code class="i">code=200</code> 成功；播放类另有 <code class="i">subcode</code>，如 10003 无版权、10004 需购买或 VIP</td></tr>
+            <tr><td>凭证保管</td><td>私钥只能放服务端。前端持有等于公开应用身份</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>音质档位</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th style="width:130px">参数</th><th>取值</th></tr></thead>
+          <tbody>
+            <tr><td>bitrate</td><td>128 标准 / 192 较高 / 320 极高 / 999 无损 / 1999 Hi-Res；默认 320，拿不到自动返回更低一档</td></tr>
+            <tr><td>level</td><td><code class="i">standard</code> <code class="i">higher</code> <code class="i">exhigh</code> <code class="i">lossless</code> <code class="i">hires</code> <code class="i">jyeffect</code>（高清臻音）<code class="i">sky</code>（沉浸环绕）<code class="i">jymaster</code>（超清母带）<code class="i">vivid</code>（臻音全景声）</td></tr>
+            <tr><td>限制</td><td>无损以上需账号权益或单独开通；<code class="i">vivid</code> 需要单独配置</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>四条不写在接口签名里、但会卡住你的约束</h3>
+      <div class="check">
+        <div class="li"><span class="ic">1</span><div><b>额度按天封顶。</b>个人开发者每人每天有调用上限，具体数字不公开，只能在管控台应用详情里看剩余量。做小范围产品够用，公开服务会撞墙。</div></div>
+        <div class="li"><span class="ic">2</span><div><b>能调多少接口要等审核。</b>目录里 146 个音乐接口是理论上限，个人实际批下来的接口分组很可能是基础子集，别按全量排期。</div></div>
+        <div class="li"><span class="ic">3</span><div><b>用户不是你的。</b>只有匿名/二维码/H5 三种登录，用户必须本来就是网易云用户。你攒不下自己的账号体系，播放权益也跟着他的会员身份走。</div></div>
+        <div class="li"><span class="ic">4</span><div><b>播放地址不能留。</b>带签名、短时效、禁缓存禁转分发。做不了离线下载站，也做不了自己的 CDN。</div></div>
+      </div>
+    </section>
+
+    <!-- ========== 6 ========== -->
+    <section id="s6">
+      <h2><span class="n">06</span>做不到的事</h2>
+      <p class="sub">三个零命中，直接决定产品形态。这不是没找到，是确实没有。</p>
+
+      <div class="cards3">
+        <div class="no-card">
+          <b>上传歌曲 <em>0 个接口</em></b>
+          <p>全目录搜「上传」只命中「生成密钥并上传」——那是传 RSA 公钥。没有任何音频上传能力，用户发不了歌，你的版权内容也进不了曲库。</p>
+        </div>
+        <div class="no-card">
+          <b>动态 / 私信 / 粉丝 <em>0 条</em></b>
+          <p>「动态」0 条、「私信」0 条、「粉丝」0 条。评论是有的，但社区关系链完全没有，做不了「云村」。</p>
+        </div>
+        <div class="no-card">
+          <b>新建歌单 <em>无此接口</em></b>
+          <p>30 多个歌单接口里只有收藏、加歌、删歌。你能往用户已有歌单塞歌，但「创建我的歌单」这个按钮实现不了。</p>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top:20px">
+        <b>这三条不是技术难度问题，是产品定位问题。</b>
+        官方给你的是「内容分发入口」，不是「内容生产与社区平台」。
+        如果你的产品设计里有「用户创建歌单并分享」或「上传自己的作品」，
+        <b>现在就要改设计</b>，不要等做完才发现。
+      </div>
+    </section>
+
+    <!-- ========== 7 ========== -->
+    <section id="s7">
+      <h2><span class="n">07</span>可以做什么</h2>
+      <p class="sub">按接口实际能力，能落地的三个产品形态。</p>
+
+      <div class="grid grid3">
+        <div class="cap" style="border-color:#f0dcdc">
+          <div class="hd"><h4>① 网页播放器</h4><span class="n">推荐先做 · 2～3 周</span></div>
+          <ul>
+            <li>首页推荐流 + 每日推荐</li>
+            <li>搜索 + 歌单/专辑/艺人页</li>
+            <li>播放页 + 逐字歌词滚动</li>
+            <li>收藏、红心、播放记录</li>
+          </ul>
+          <span class="ep">架构：前端 → 自己的 BFF（保管私钥/签名/缓存/上报）→ 官方接口</span>
+        </div>
+        <div class="cap" style="border-color:#f0dcdc">
+          <div class="hd"><h4>② 桌面/车载客户端</h4><span class="n">定制接口向</span></div>
+          <ul>
+            <li>榜单、歌单、私人漫游为主的「电台式」交互</li>
+            <li>语音搜索 + 多槽位搜索</li>
+            <li>沉浸式全屏播放页</li>
+            <li>需要单独申请接口分组与上线验收</li>
+          </ul>
+          <span class="ep">注意：车机/手表/音箱类播放地址有效期为 1 天，与普通歌曲不同</span>
+        </div>
+        <div class="cap" style="border-color:#f0dcdc">
+          <div class="hd"><h4>③ 播客 / 有声内容站</h4><span class="n">65 个接口</span></div>
+          <ul>
+            <li>播客分类、榜单、详情</li>
+            <li>单集播放、播单、AI 快讯</li>
+            <li>订阅与更新提醒</li>
+            <li>竞争少，接口意外地完整</li>
+          </ul>
+          <span class="ep">/openapi/podcast/play/url/<wbr>get/v1 · /openapi/podcast/my/<wbr>collect/count</span>
+        </div>
+      </div>
+
+      <h3>如果要做，先按这个顺序</h3>
+      <div class="check">
+        <div class="li"><span class="ic">1</span><div><b>先入驻拿凭证。</b>成年实名即可，个人通道，拿到 AppID + PrivateKey，再做一次应用初始化。这一步不通，后面全是空谈。</div></div>
+        <div class="li"><span class="ic">2</span><div><b>先跑通「匿名登录 → 搜索 → 播放」。</b>这条链路能通，说明签名、bizContent 编码、返回解析三件事都对了。</div></div>
+        <div class="li"><span class="ic">3</span><div><b>再做登录与用户态。</b>二维码登录是唯一稳的方式，密码登录容易触发风控。</div></div>
+        <div class="li"><span class="ic">4</span><div><b>最后接播放上报。</b>上线前有「数据验收」环节，会校验上报数据格式，别等到上线当天才发现。</div></div>
+      </div>
+    </section>
+
+    <!-- ========== 8 ========== -->
+    <section id="s8">
+      <h2><span class="n">08</span>接口速查</h2>
+      <p class="sub">做播放器最常用的 20 个，路径均来自官方原文。</p>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th style="width:190px">用途</th><th>接口路径</th></tr></thead>
+          <tbody>
+            <tr><td>匿名登录</td><td><code class="i">/openapi/music/basic/oauth2/login/anonymous</code></td></tr>
+            <tr><td>登录二维码</td><td><code class="i">/openapi/music/basic/user/oauth2/qrcodekey/get/v2</code></td></tr>
+            <tr><td>用户信息</td><td><code class="i">/openapi/music/basic/user/profile/get/v2</code></td></tr>
+            <tr><td>搜索歌曲</td><td><code class="i">/openapi/music/basic/search/song/get/v3</code></td></tr>
+            <tr><td>综合搜索</td><td><code class="i">/openapi/music/basic/complex/search</code></td></tr>
+            <tr><td>搜索提示词</td><td><code class="i">/openapi/music/basic/search/suggest/keyword/get/v2</code></td></tr>
+            <tr><td>热搜榜</td><td><code class="i">/openapi/music/basic/search/charts/list/get</code></td></tr>
+            <tr><td>每日推荐</td><td><code class="i">/openapi/music/basic/recommend/songlist/get/v2</code></td></tr>
+            <tr><td>推荐歌单</td><td><code class="i">/openapi/music/basic/recommend/playlist/get</code></td></tr>
+            <tr><td>私人漫游</td><td><code class="i">/openapi/music/basic/private/fm/roaming/song/list</code></td></tr>
+            <tr><td>心动模式</td><td><code class="i">/openapi/music/basic/song/play/intelligence/get</code></td></tr>
+            <tr><td>雷达歌单</td><td><code class="i">/openapi/music/basic/playlist/radar/get</code></td></tr>
+            <tr><td>榜单列表</td><td><code class="i">/openapi/music/basic/toplist/get/v2</code></td></tr>
+            <tr><td>歌单详情</td><td><code class="i">/openapi/music/basic/playlist/detail/get/v2</code></td></tr>
+            <tr><td>歌单歌曲列表</td><td><code class="i">/openapi/music/basic/playlist/song/list/get/v5</code></td></tr>
+            <tr><td>歌曲详情</td><td><code class="i">/openapi/music/basic/song/detail/get/v2</code></td></tr>
+            <tr><td>播放地址</td><td><code class="i">/openapi/music/basic/song/playurl/get/v2</code></td></tr>
+            <tr><td>批量播放地址</td><td><code class="i">/openapi/music/basic/batch/song/playurl/get</code></td></tr>
+            <tr><td>歌词 / 逐字歌词</td><td><code class="i">/openapi/music/basic/song/lyric/get/v2</code> · <code class="i">/song/lyric/word/by/word/get</code></td></tr>
+            <tr><td>无法播放提示</td><td><code class="i">/openapi/music/basic/song/text/play/get/v2</code></td></tr>
+            <tr><td>获取评论</td><td><code class="i">/openapi/music/basic/comments/get/v2</code></td></tr>
+            <tr><td>收藏歌单</td><td><code class="i">/openapi/music/basic/playlist/sub/v2</code></td></tr>
+            <tr><td>批量加歌到歌单</td><td><code class="i">/openapi/music/basic/playlist/song/batch/like</code></td></tr>
+            <tr><td>最近播放</td><td><code class="i">/openapi/music/basic/song/play/record/list</code></td></tr>
+            <tr><td>听歌排行</td><td><code class="i">/openapi/music/basic/query/song/record/get</code></td></tr>
+            <tr><td>播客播放地址</td><td><code class="i">/openapi/podcast/play/url/get/v1</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="margin-top:16px;font-size:13px;color:var(--ink-3)">
+        每条的完整入参表、出参表、JSON 示例见同目录 Markdown 分册：
+        <code class="i">02-音乐API-1.md</code>、<code class="i">03-音乐API-2.md</code>、<code class="i">04-播客API.md</code>，
+        全部路径可查 <code class="i">06-完整接口索引.md</code>。
+      </p>
+    </section>
+
+  </main>
+</div>
+</div>
+
+<footer>
+  资料来源：网易云音乐开放平台官方文档中心（developer.music.163.com），2026-11-13 抓取，共 368 篇去重正文。
+  本页仅做能力说明，接口以官方最新文档为准；未在官方文档中出现的接口，本页不予收录。
+</footer>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+    var sections = links.map(function (a) {
+      return document.querySelector(a.getAttribute('href'));
+    }).filter(Boolean);
+    if (!('IntersectionObserver' in window) || !sections.length) return;
+
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var id = '#' + en.target.id;
+        links.forEach(function (a) {
+          a.classList.toggle('on', a.getAttribute('href') === id);
+        });
+      });
+    }, { rootMargin: '-12% 0px -70% 0px', threshold: 0 });
+
+    sections.forEach(function (s) { obs.observe(s); });
+  })();
+</script>
+</body>
+</html>
