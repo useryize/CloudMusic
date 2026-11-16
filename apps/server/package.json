@@ -1,0 +1,18 @@
+{
+  "name": "@cloudmusic/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts --dev --port 17890",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudmusic/core": "workspace:*",
+    "fastify": "^5.0.0",
+    "@fastify/static": "^8.0.0",
+    "open": "^10.0.0"
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+web-dist/
+release/
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials*.json
+runtime.json
+coverage/
+*.tsbuildinfo
+.cloudmusic/

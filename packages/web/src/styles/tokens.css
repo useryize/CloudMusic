@@ -1,0 +1,26 @@
+:root {
+  color-scheme: dark;
+  --bg-base: #0b0d10;
+  --bg-panel: #0f1114;
+  --bg-raise: #131519;
+  --bg-input: #16181d;
+  --bg-card: #1b1e24;
+  --bg-avatar: #2a2e36;
+  --line: #24272e;
+  --brand: #ec4141;
+  --text-primary: #e6e8ec;
+  --text-second: #c9cdd4;
+  --text-tertiary: #9aa0aa;
+  --text-muted: #646a75;
+  --text-disabled: #4a4f58;
+  --s-xs: 4px;
+  --s-sm: 8px;
+  --s-md: 12px;
+  --s-lg: 18px;
+  --s-xl: 24px;
+  --s-2xl: 32px;
+  --r-card: 12px;
+  --r-cover: 8px;
+  --r-pill: 999px;
+  --row-h: 44px;
+}
