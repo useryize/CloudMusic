@@ -11,6 +11,7 @@ import {
   loadCredentials,
   saveCredentials,
   allowedPath,
+  CredentialValidationError,
 } from '@cloudmusic/core'
 import type { Biz } from '@cloudmusic/core'
 import { cookieToken, safeEqual, trustedRequest } from './guard.js'
@@ -97,10 +98,15 @@ export async function startServer(
       try {
         await saveCredentials(dir, req.body)
         return { ok: true }
-      } catch {
+      } catch (error) {
+        if (error instanceof CredentialValidationError)
+          return reply.code(400).send({ code: 400, msg: error.message })
         return reply
-          .code(400)
-          .send({ code: 400, msg: '保存失败，请检查 RSA 私钥和目录权限' })
+          .code(500)
+          .send({
+            code: 500,
+            msg: '私钥校验已通过，但凭证文件写入失败。请检查本地数据目录的写入权限，或通过 CM_DATA_DIR 指定可写目录。',
+          })
       }
     },
   )
@@ -124,15 +130,13 @@ export async function startServer(
         return reply.code(400).send({ code: 400, msg: '接口路径不允许' })
       const c = await loadCredentials(dir)
       if (!c.appId || !c.privateKey)
-        return reply
-          .code(409)
-          .send({
-            code: 409,
-            missing: ['appId', 'privateKey'].filter(
-              (k) => !c[k as keyof typeof c],
-            ),
-            msg: '请先配置应用凭证',
-          })
+        return reply.code(409).send({
+          code: 409,
+          missing: ['appId', 'privateKey'].filter(
+            (k) => !c[k as keyof typeof c],
+          ),
+          msg: '请先配置应用凭证',
+        })
       try {
         return await core.call(req.body.path, req.body.biz)
       } catch {
