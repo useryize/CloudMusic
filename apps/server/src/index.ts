@@ -1,7 +1,7 @@
 import Fastify from 'fastify'
 import serveStatic from '@fastify/static'
 import { randomBytes } from 'node:crypto'
-import { mkdir, writeFile, unlink } from 'node:fs/promises'
+import { mkdir, writeFile, unlink, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { resolve, join } from 'node:path'
@@ -12,9 +12,15 @@ import {
   saveCredentials,
   allowedPath,
   CredentialValidationError,
+  PlatformError,
+  createTokenStore,
+  loadDevice,
+  saveDevice,
+  deviceFields,
 } from '@cloudmusic/core'
 import type { Biz } from '@cloudmusic/core'
 import { cookieToken, safeEqual, trustedRequest } from './guard.js'
+import { registerFeatures, stripSecrets } from './features.js'
 
 export async function startServer(
   options: {
@@ -27,7 +33,25 @@ export async function startServer(
   const app = Fastify({ logger: false, bodyLimit: 32768 })
   const token = randomBytes(32).toString('hex')
   const dir = options.dataDir ?? join(homedir(), '.cloudmusic')
-  const core = createClient(() => loadCredentials(dir))
+  let defaultDevice: Record<string, string> = { appVer: '1.0.0' }
+  const configPath = fileURLToPath(
+    new URL('../../../config/default.json', import.meta.url),
+  )
+  if (existsSync(configPath))
+    defaultDevice = (
+      JSON.parse(await readFile(configPath, 'utf8')) as {
+        device: Record<string, string>
+      }
+    ).device
+  const core = createClient(
+    () => loadCredentials(dir),
+    async () => ({ device: await loadDevice(dir, defaultDevice) }),
+  )
+  const auth = await createTokenStore(
+    dir,
+    () => loadCredentials(dir),
+    core.call,
+  )
   app.addHook('onRequest', async (req, reply) => {
     reply
       .header('Cache-Control', 'no-store')
@@ -77,9 +101,37 @@ export async function startServer(
   }))
   app.get('/api/setup', async () => {
     const c = await loadCredentials(dir)
-    return { configured: !!(c.appId && c.privateKey) }
+    return {
+      configured: !!(c.appId && c.privateKey),
+      hasAppSecret: !!c.appSecret,
+    }
   })
-  app.post<{ Body: { appId: string; privateKey: string } }>(
+  app.get('/api/device', async () => ({
+    device: await loadDevice(dir, defaultDevice),
+    fields: deviceFields,
+  }))
+  app.post<{ Body: Record<string, string> }>(
+    '/api/device',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: Object.fromEntries(
+            deviceFields.map((key) => [
+              key,
+              { type: 'string', maxLength: 128 },
+            ]),
+          ),
+        },
+      },
+    },
+    async (req) => {
+      await saveDevice(dir, req.body)
+      return { ok: true }
+    },
+  )
+  app.post<{ Body: { appId: string; privateKey: string; appSecret?: string } }>(
     '/api/setup',
     {
       schema: {
@@ -90,23 +142,31 @@ export async function startServer(
           properties: {
             appId: { type: 'string', minLength: 1 },
             privateKey: { type: 'string', minLength: 1 },
+            appSecret: { type: 'string' },
           },
         },
       },
     },
     async (req, reply) => {
       try {
-        await saveCredentials(dir, req.body)
+        const previous = await loadCredentials(dir)
+        await saveCredentials(dir, {
+          ...req.body,
+          appSecret:
+            req.body.appSecret?.trim() ||
+            (previous.appId === req.body.appId.trim()
+              ? previous.appSecret
+              : undefined),
+        })
+        await auth.logout()
         return { ok: true }
       } catch (error) {
         if (error instanceof CredentialValidationError)
           return reply.code(400).send({ code: 400, msg: error.message })
-        return reply
-          .code(500)
-          .send({
-            code: 500,
-            msg: '私钥校验已通过，但凭证文件写入失败。请检查本地数据目录的写入权限，或通过 CM_DATA_DIR 指定可写目录。',
-          })
+        return reply.code(500).send({
+          code: 500,
+          msg: '私钥校验已通过，但凭证文件写入失败。请检查本地数据目录的写入权限，或通过 CM_DATA_DIR 指定可写目录。',
+        })
       }
     },
   )
@@ -126,7 +186,11 @@ export async function startServer(
       },
     },
     async (req, reply) => {
-      if (!allowedPath(req.body.path))
+      if (
+        !allowedPath(req.body.path) ||
+        /\/oauth2\//.test(req.body.path) ||
+        /\/playurl\//.test(req.body.path)
+      )
         return reply.code(400).send({ code: 400, msg: '接口路径不允许' })
       const c = await loadCredentials(dir)
       if (!c.appId || !c.privateKey)
@@ -138,14 +202,25 @@ export async function startServer(
           msg: '请先配置应用凭证',
         })
       try {
-        return await core.call(req.body.path, req.body.biz)
-      } catch {
+        const method = [
+          '/openapi/music/basic/recommend/daily/image',
+          '/openapi/music/comment/get-best-comments-by-song',
+          '/openapi/music/resource/comment/lv1/list/desc',
+        ].includes(req.body.path)
+          ? 'GET'
+          : 'POST'
+        return stripSecrets(
+          await auth.request(req.body.path, req.body.biz, method),
+        )
+      } catch (error) {
+        if (error instanceof PlatformError) throw error
         return reply
           .code(502)
           .send({ code: 502, msg: '开放平台请求失败，请检查网络或应用凭证' })
       }
     },
   )
+  await registerFeatures(app, auth)
   const root =
     options.webRoot ??
     resolve(fileURLToPath(new URL('../../../web-dist', import.meta.url)))

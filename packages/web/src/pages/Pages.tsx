@@ -1,15 +1,9 @@
-import { useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router'
+﻿import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import {
-  ArrowUpRight,
-  Disc3,
-  CalendarDays,
-  SlidersHorizontal,
-} from 'lucide-react'
-import { getHotKeywords } from '../api/search'
-import { getPlaylistDetail } from '../api/playlist'
+import { Disc3 } from 'lucide-react'
 import { SetupRequiredError } from '../lib/request'
+import { DeviceSetup } from '../components/DeviceSetup'
 export function Result({
   data,
   error,
@@ -33,127 +27,19 @@ export function Result({
     return <pre className="result">{JSON.stringify(data, null, 2)}</pre>
   return null
 }
-export function DiscoverPage() {
-  const query = useQuery({
-    queryKey: ['search', 'hot'],
-    queryFn: getHotKeywords,
-    enabled: false,
-    staleTime: 600000,
-  })
-  return (
-    <>
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">为你而来</p>
-          <h1>发现音乐</h1>
-        </div>
-        <Link to="/square">
-          歌单广场 <ArrowUpRight size={16} />
-        </Link>
-      </div>
-      <nav className="tabs" aria-label="发现分类">
-        <span aria-current="page">个性推荐</span>
-        <Link to="/square">歌单</Link>
-        <Link to="/toplist">排行榜</Link>
-      </nav>
-      <Link to="/daily" className="daily-banner">
-        <div>
-          <span className="eyebrow">DAILY RECOMMENDATION</span>
-          <h2>把今天，交给音乐。</h2>
-          <p>每日推荐 · 发现属于你的旋律</p>
-          <span className="pill">查看每日推荐 →</span>
-        </div>
-        <CalendarDays size={100} strokeWidth={1} />
-      </Link>
-      <section>
-        <div className="section-heading">
-          <h2>开始你的音乐之旅</h2>
-          <span className="muted">连接网易云音乐开放平台</span>
-        </div>
-        <div className="entry-grid">
-          {[
-            {
-              to: '/setup',
-              title: '应用配置',
-              desc: '配置 appId 与 RSA 私钥',
-              icon: SlidersHorizontal,
-            },
-            {
-              to: '/square',
-              title: '探索歌单',
-              desc: '在歌单里遇见新的喜欢',
-              icon: Disc3,
-            },
-            {
-              to: '/toplist',
-              title: '音乐排行榜',
-              desc: '发现当下的热门声音',
-              icon: ArrowUpRight,
-            },
-          ].map(({ to, title, desc, icon: Icon }) => (
-            <Link className="entry" to={to} key={to}>
-              <Icon size={28} />
-              <h3>{title}</h3>
-              <p>{desc}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-      <section className="connection">
-        <div>
-          <h2>开放平台连接测试</h2>
-          <p className="muted">发送只读热搜请求，验证本地签名与接口链路。</p>
-        </div>
-        <button
-          className="primary"
-          disabled={query.isFetching}
-          onClick={() => void query.refetch()}
-        >
-          {query.isFetching ? '请求中…' : '测试请求'}
-        </button>
-      </section>
-      <Result
-        data={query.data}
-        error={query.error}
-        pending={query.isFetching}
-      />
-    </>
-  )
-}
-export function PlaylistPage() {
-  const { id = '' } = useParams()
-  const valid = /^\d+$/.test(id) && Number.isSafeInteger(Number(id))
-  const query = useQuery({
-    queryKey: ['playlist', id, 'detail'],
-    queryFn: () => getPlaylistDetail(Number(id)),
-    enabled: valid,
-  })
-  return (
-    <>
-      <p className="eyebrow">PLAYLIST</p>
-      <h1>歌单详情</h1>
-      <p className="muted">歌单 ID · {id}</p>
-      {valid ? (
-        <Result
-          data={query.data}
-          error={query.error}
-          pending={query.isPending}
-        />
-      ) : (
-        <p role="alert">歌单 ID 无效</p>
-      )}
-    </>
-  )
-}
 export function SetupPage() {
   const [appId, setAppId] = useState('')
   const [privateKey, setPrivateKey] = useState('')
+  const [appSecret, setAppSecret] = useState('')
   const status = useQuery({
     queryKey: ['setup'],
     queryFn: async () => {
       const res = await fetch('/api/setup')
       if (!res.ok) throw new Error('无法读取配置状态')
-      return (await res.json()) as { configured: boolean }
+      return (await res.json()) as {
+        configured: boolean
+        hasAppSecret: boolean
+      }
     },
   })
   const save = useMutation({
@@ -161,13 +47,14 @@ export function SetupPage() {
       const res = await fetch('/api/setup', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ appId: appId.trim(), privateKey }),
+        body: JSON.stringify({ appId: appId.trim(), privateKey, appSecret }),
       })
       const body = (await res.json()) as { msg?: string }
       if (!res.ok) throw new Error(body.msg || '保存失败')
     },
     onSuccess: () => {
       setPrivateKey('')
+      setAppSecret('')
       void status.refetch()
     },
   })
@@ -205,6 +92,20 @@ export function SetupPage() {
           autoComplete="off"
           spellCheck={false}
         />
+        <label htmlFor="appSecret">AppSecret（选填，用于自动续期）</label>
+        <input
+          id="appSecret"
+          name="appSecret"
+          type="password"
+          value={appSecret}
+          onChange={(event) => setAppSecret(event.target.value)}
+          autoComplete="off"
+        />
+        <p className="muted">
+          {status.data?.hasAppSecret
+            ? '已保存 AppSecret；同一应用留空保留原值。'
+            : '未配置时，登录到期后需要重新扫码。'}
+        </p>
         <p className="muted">凭证保存在本机服务端，页面不读取已保存的私钥。</p>
         <button className="primary" disabled={save.isPending}>
           {save.isPending ? '保存中…' : '保存配置'}
@@ -216,6 +117,7 @@ export function SetupPage() {
           </p>
         )}
       </form>
+      <DeviceSetup />
     </div>
   )
 }

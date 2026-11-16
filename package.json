@@ -13,17 +13,19 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
+    "e2e": "playwright test",
     "check:secrets": "node scripts/check-secrets.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@playwright/test": "1.51.0",
     "@types/node": "^22.0.0",
     "eslint": "^9.0.0",
-    "typescript-eslint": "^8.0.0",
-    "typescript": "~5.6.3",
     "prettier": "^3.0.0",
-    "tsx": "^4.0.0",
     "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "~5.6.3",
+    "typescript-eslint": "^8.0.0",
     "vitest": "^3.0.0"
   }
 }

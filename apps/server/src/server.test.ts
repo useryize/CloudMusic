@@ -59,7 +59,26 @@ it('保护本地服务、交换 Cookie，凭证缺失时引导配置', async () 
     ).toBe(400)
     expect(
       (await inject('/api/setup', { 'x-app-token': server.token })).json(),
-    ).toEqual({ configured: false })
+    ).toEqual({ configured: false, hasAppSecret: false })
+    expect(
+      (
+        await inject('/api/auth/status', { 'x-app-token': server.token })
+      ).json(),
+    ).toEqual({ loggedIn: false, anonymous: false })
+    expect(
+      (
+        await server.app.inject({
+          url: '/api/rpc',
+          method: 'POST',
+          headers,
+          payload: { path: '/openapi/music/basic/oauth2/login/anonymous' },
+        })
+      ).statusCode,
+    ).toBe(400)
+    expect(
+      (await inject('/api/audio/unknown', { 'x-app-token': server.token }))
+        .statusCode,
+    ).toBe(410)
   } finally {
     await server.close()
     await rm(dir, { recursive: true, force: true })

@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router'
+﻿import { NavLink, Outlet, useNavigate } from 'react-router'
 import {
   Compass,
   Disc3,
@@ -10,13 +10,10 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Play,
-  SkipBack,
-  SkipForward,
-  Volume2,
 } from 'lucide-react'
 import { useState } from 'react'
-import { usePlayerPreferences } from '../../player/store'
+import { PlayerBar, AuthBadge } from '../PlayerBar'
+import { useNotice } from '../../lib/ui'
 import s from './AppShell.module.css'
 const nav = [
   { to: '/', label: '发现音乐', icon: Compass },
@@ -27,8 +24,9 @@ const nav = [
 export function AppShell() {
   const navigate = useNavigate()
   const [keyword, setKeyword] = useState('')
-  const [notice, setNotice] = useState('')
-  const { volume, setVolume } = usePlayerPreferences()
+  const notice = useNotice((s) => s.message)
+  const setNotice = useNotice((s) => s.show)
+
   return (
     <div className={s.shell}>
       <a className={s.skip} href="#content">
@@ -57,7 +55,7 @@ export function AppShell() {
             <Heart size={18} />
             我的音乐
           </NavLink>
-          <NavLink to="/square" className={s.nav}>
+          <NavLink to="/mine?tab=saved" className={s.nav}>
             <ListMusic size={18} />
             收藏歌单
           </NavLink>
@@ -92,63 +90,12 @@ export function AppShell() {
           />
         </form>
         <span className={s.spacer} />
-        <span className={s.quality}>Hi-Res</span>
-        <NavLink to="/login">登录</NavLink>
+        <AuthBadge />
       </header>
       <main id="content" className={s.content}>
         <Outlet />
       </main>
-      <footer className={s.player}>
-        <div className={s.track}>
-          <div className={s.cover}>
-            <Disc3 />
-          </div>
-          <div>
-            <p>音乐，随时陪伴</p>
-            <small>选择一首喜欢的歌</small>
-          </div>
-        </div>
-        <div className={s.controls}>
-          <div className={s.buttons}>
-            <button
-              aria-label="上一首"
-              onClick={() => setNotice('播放功能开发中')}
-            >
-              <SkipBack size={18} />
-            </button>
-            <button
-              className={s.play}
-              aria-label="播放"
-              onClick={() => setNotice('播放功能开发中')}
-            >
-              <Play size={18} />
-            </button>
-            <button
-              aria-label="下一首"
-              onClick={() => setNotice('播放功能开发中')}
-            >
-              <SkipForward size={18} />
-            </button>
-          </div>
-          <div className={s.progress}>
-            <small>00:00</small>
-            <div />
-            <small>00:00</small>
-          </div>
-        </div>
-        <label className={s.volume}>
-          <Volume2 size={18} />
-          <span className={s.sr}>音量</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={volume}
-            onChange={(event) => setVolume(Number(event.target.value))}
-          />
-        </label>
-      </footer>
+      <PlayerBar />
       {notice && (
         <div role="status" className={s.toast}>
           {notice}

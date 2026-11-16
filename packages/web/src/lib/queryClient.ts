@@ -6,7 +6,9 @@ export const queryClient = new QueryClient({
       staleTime: 300000,
       refetchOnWindowFocus: false,
       retry: (count, error) =>
-        count < 2 && (!(error instanceof ApiError) || error.code >= 500),
+        count < 2 &&
+        (!(error instanceof ApiError) ||
+          (error.code >= 500 && error.code < 600)),
       retryDelay: (attempt) => 300 * 3 ** attempt,
     },
   },

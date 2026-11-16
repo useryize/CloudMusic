@@ -6,6 +6,7 @@ import { router } from './router'
 import { queryClient } from './lib/queryClient'
 import './styles/tokens.css'
 import './styles/base.css'
+import './styles/music.css'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

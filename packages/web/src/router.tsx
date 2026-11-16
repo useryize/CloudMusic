@@ -1,6 +1,6 @@
-import { createBrowserRouter } from 'react-router'
+﻿import { createBrowserRouter } from 'react-router'
 import { AppShell } from './components/layout/AppShell'
-const page = (title: string, description: string) => async () => {
+const scaffold = (title: string, description: string) => async () => {
   const { ScaffoldPage } = await import('./pages/Pages')
   return {
     Component: () => <ScaffoldPage title={title} description={description} />,
@@ -13,13 +13,61 @@ export const router = createBrowserRouter([
       {
         index: true,
         lazy: async () => ({
-          Component: (await import('./pages/Pages')).DiscoverPage,
+          Component: (await import('./pages/Browse')).DiscoverPage,
         }),
       },
       {
         path: 'playlist/:id',
         lazy: async () => ({
-          Component: (await import('./pages/Pages')).PlaylistPage,
+          Component: (await import('./pages/Browse')).PlaylistPage,
+        }),
+      },
+      {
+        path: 'album/:id',
+        lazy: async () => ({
+          Component: (await import('./pages/Browse')).AlbumPage,
+        }),
+      },
+      {
+        path: 'artist/:id',
+        lazy: async () => ({
+          Component: (await import('./pages/Browse')).ArtistPage,
+        }),
+      },
+      {
+        path: 'toplist',
+        lazy: async () => ({
+          Component: (await import('./pages/Browse')).ToplistPage,
+        }),
+      },
+      {
+        path: 'daily',
+        lazy: async () => ({
+          Component: (await import('./pages/Browse')).DailyPage,
+        }),
+      },
+      {
+        path: 'square',
+        lazy: async () => ({
+          Component: (await import('./pages/Browse')).SquarePage,
+        }),
+      },
+      {
+        path: 'search',
+        lazy: async () => ({
+          Component: (await import('./pages/Library')).SearchPage,
+        }),
+      },
+      {
+        path: 'mine',
+        lazy: async () => ({
+          Component: (await import('./pages/Library')).MinePage,
+        }),
+      },
+      {
+        path: 'comment/:songId',
+        lazy: async () => ({
+          Component: (await import('./pages/Comments')).CommentPage,
         }),
       },
       {
@@ -28,46 +76,22 @@ export const router = createBrowserRouter([
           Component: (await import('./pages/Pages')).SetupPage,
         }),
       },
-      ...[
-        ['search', '搜索结果', '搜索单曲、歌单、专辑与艺人'],
-        ['mine', '我的音乐', '你的收藏与最近播放'],
-        ['artist/:id', '艺人详情', '热门歌曲与专辑'],
-        ['album/:id', '专辑详情', '专辑介绍与歌曲'],
-        ['podcast', '播客频道', '听见更多有趣的声音'],
-        ['toplist', '排行榜', '发现热门音乐'],
-        ['video', '视频', 'MV 内容将通过官方外链打开'],
-        ['comment/:songId', '评论', '分享音乐带来的感受'],
-        ['square', '歌单广场', '发现适合此刻的歌单'],
-        ['daily', '每日推荐', '每日为你更新'],
-        ['together/:roomId', '一起听', '让音乐连接彼此'],
-      ].map(([path, title, description]) => ({
-        path,
-        lazy: page(title, description),
-      })),
-      { path: '*', lazy: page('页面未找到', '请通过左侧导航继续浏览') },
+      { path: 'podcast', lazy: scaffold('播客频道', '听见更多有趣的声音') },
+      { path: 'video', lazy: scaffold('视频', '发现音乐里的故事') },
+      { path: 'together/:roomId', lazy: scaffold('一起听', '让音乐连接彼此') },
+      { path: '*', lazy: scaffold('页面未找到', '请通过左侧导航继续浏览') },
     ],
   },
   {
     path: '/login',
     lazy: async () => ({
-      Component: () => (
-        <main className="standalone">
-          <ScaffoldLogin />
-        </main>
-      ),
+      Component: (await import('./pages/Library')).LoginPage,
     }),
   },
-  { path: '/now-playing', lazy: page('正在播放', '播放内核将在 M2 阶段接入') },
+  {
+    path: '/now-playing',
+    lazy: async () => ({
+      Component: (await import('./pages/NowPlaying')).NowPlayingPage,
+    }),
+  },
 ])
-function ScaffoldLogin() {
-  return (
-    <div className="login">
-      <h1>欢迎来到云音乐</h1>
-      <p className="muted">扫码登录将在后续阶段接入。</p>
-      <LinkBack />
-    </div>
-  )
-}
-function LinkBack() {
-  return <a href="/">返回发现音乐 →</a>
-}

@@ -12,3 +12,5 @@ runtime.json
 coverage/
 *.tsbuildinfo
 .cloudmusic/
+test-results/
+playwright-report/

@@ -43,6 +43,7 @@ export async function loadCredentials(
   }
   return {
     appId: process.env.CM_APP_ID || local.appId,
+    appSecret: process.env.CM_APP_SECRET || local.appSecret,
     privateKey:
       process.env.CM_PRIVATE_KEY || local.privateKey
         ? normalizePrivateKey(
@@ -58,7 +59,13 @@ export async function saveCredentials(dir: string, credentials: Credentials) {
   await mkdir(dir, { recursive: true, mode: 0o700 })
   await writeFile(
     join(dir, 'credentials.json'),
-    JSON.stringify({ appId, privateKey }),
+    JSON.stringify({
+      appId,
+      privateKey,
+      ...(credentials.appSecret?.trim()
+        ? { appSecret: credentials.appSecret.trim() }
+        : {}),
+    }),
     {
       mode: 0o600,
     },

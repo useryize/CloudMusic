@@ -1,9 +1,6 @@
 {
   "port": 17890,
   "device": {
-    "channel": "cloudmusic-pc",
-    "deviceType": "openapi",
-    "os": "openapi",
     "appVer": "1.0.0"
   },
   "timeout": 10000,
