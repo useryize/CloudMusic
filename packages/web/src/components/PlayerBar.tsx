@@ -18,6 +18,7 @@ import { duration } from '../lib/format'
 import { Cover, LikeButton } from './Music'
 import { useQuery } from '@tanstack/react-query'
 import { authStatus } from '../api/user'
+import { useConnection } from '../api/connection'
 export function AuthBadge() {
   const query = useQuery({
     queryKey: ['auth'],
@@ -36,6 +37,7 @@ export function AuthBadge() {
 }
 export function PlayerBar() {
   const state = usePlayer()
+  const cli = useConnection().data?.backend === 'cli' || state.backend === 'cli'
   const track = state.queue[state.index]
   return (
     <footer className="live-player">
@@ -136,18 +138,22 @@ export function PlayerBar() {
         )}
       </div>
       <div className="player-tools">
-        <label>
-          <span className="sr-only">音质</span>
-          <select
-            value={state.quality}
-            onChange={(e) => void player.setQuality(e.target.value as Quality)}
-          >
-            <option value="standard">标准</option>
-            <option value="higher">较高</option>
-            <option value="exhigh">极高</option>
-            <option value="lossless">无损</option>
-          </select>
-        </label>
+        {!cli && (
+          <label>
+            <span className="sr-only">音质</span>
+            <select
+              value={state.quality}
+              onChange={(e) =>
+                void player.setQuality(e.target.value as Quality)
+              }
+            >
+              <option value="standard">标准</option>
+              <option value="higher">较高</option>
+              <option value="exhigh">极高</option>
+              <option value="lossless">无损</option>
+            </select>
+          </label>
+        )}
         <label className="volume-control">
           <Volume2 size={16} />
           <span className="sr-only">音量</span>
@@ -157,7 +163,7 @@ export function PlayerBar() {
             max="1"
             step="0.01"
             value={state.volume}
-            onChange={(e) => state.setVolume(Number(e.target.value))}
+            onChange={(e) => player.setVolume(Number(e.target.value))}
           />
         </label>
         {track && (

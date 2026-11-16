@@ -1,4 +1,5 @@
 export interface Entity {
+  originalId?: string
   id: string
   name: string
   coverImgUrl?: string
@@ -15,6 +16,7 @@ export interface Entity {
   threadId?: string
 }
 export interface Track {
+  originalId?: string
   id: string
   name: string
   duration: number
@@ -65,6 +67,7 @@ export const imageUrl = (value: unknown) => {
 export function entity(value: unknown): Entity {
   const v = object(value)
   return {
+    originalId: text(v.originalId) || undefined,
     id: text(v.id ?? v.playlistId),
     name: text(v.name),
     coverImgUrl: imageUrl(v.coverImgUrl ?? v.picUrl ?? v.imgUrl),
@@ -84,6 +87,7 @@ export function entity(value: unknown): Entity {
 export function track(value: unknown): Track {
   const v = object(value)
   return {
+    originalId: text(v.originalId) || undefined,
     id: text(v.id),
     name: text(v.name),
     duration: Number(v.duration ?? 0) / 1000,

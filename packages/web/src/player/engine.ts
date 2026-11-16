@@ -5,6 +5,7 @@ import type { ResolvedAudio } from './urlResolver'
 import type { Track } from '../api/types'
 import { request } from '../lib/request'
 import { useNotice } from '../lib/ui'
+import { localApi } from '../api/user'
 
 export class PlayerController {
   private audio?: HTMLAudioElement
@@ -15,6 +16,11 @@ export class PlayerController {
   private failures = 0
   private frame = 0
   private lastTick = 0
+  private native = false
+  private backend?: Promise<void>
+  private nativeTimer?: ReturnType<typeof setTimeout>
+  private volumeTimer?: ReturnType<typeof setTimeout>
+  private nativeStarted = false
   private stalled?: ReturnType<typeof setTimeout>
   private report?: {
     track: Track
@@ -28,6 +34,90 @@ export class PlayerController {
     private resolve = resolveAudio,
     private createAudio = () => new Audio(),
   ) {}
+  private detectBackend() {
+    this.backend ??= localApi<{ backend?: string }>('/api/connection').then(
+      (result) => {
+        this.native = result.backend === 'cli'
+        state.setState({ backend: this.native ? 'cli' : 'browser' })
+      },
+    )
+    return this.backend
+  }
+  private nativeAction(action: string, value?: number) {
+    return localApi('/api/player/action', {
+      action,
+      ...(value === undefined ? {} : { value }),
+    })
+  }
+  private async loadNative(index: number) {
+    const track = state.getState().queue[index]
+    if (!track) return
+    const epoch = ++this.epoch
+    clearTimeout(this.nativeTimer)
+    this.nativeStarted = false
+    state.setState({
+      index,
+      status: 'resolving',
+      currentTime: 0,
+      duration: track.duration,
+      error: '',
+    })
+    try {
+      if (!track.playable) throw new Error('当前歌曲暂无版权或不可播放')
+      await localApi('/api/player/action', {
+        action: 'play',
+        songId: track.id,
+        originalId: track.originalId,
+      })
+      if (epoch !== this.epoch) return
+      state.setState({ status: 'playing' })
+      this.failures = 0
+      void this.nativeAction('volume', state.getState().volume * 100).catch(
+        () => {},
+      )
+      void this.pollNative(epoch)
+    } catch (error) {
+      if (epoch !== this.epoch) return
+      const message = error instanceof Error ? error.message : '播放失败'
+      state.setState({ status: 'error', error: message })
+      useNotice.getState().show(message)
+    }
+  }
+  private async pollNative(epoch: number) {
+    if (epoch !== this.epoch) return
+    try {
+      const result = await localApi<{ status: string; position: number }>(
+        '/api/player/state',
+      )
+      if (epoch !== this.epoch) return
+      if (result.status === 'playing') this.nativeStarted = true
+      if (result.status === 'playing' || result.status === 'paused')
+        state.setState({
+          status: result.status,
+          currentTime: Math.max(0, result.position),
+          error: '',
+        })
+      else if (
+        this.nativeStarted &&
+        ['stopped', 'ended'].includes(result.status)
+      ) {
+        if (state.getState().repeat === 'one')
+          await this.loadNative(state.getState().index)
+        else await this.next(true)
+        return
+      }
+    } catch (error) {
+      if (epoch === this.epoch)
+        state.setState({
+          error: error instanceof Error ? error.message : '无法读取播放状态',
+        })
+    }
+    if (epoch === this.epoch)
+      this.nativeTimer = setTimeout(
+        () => void this.pollNative(epoch),
+        document.hidden ? 4000 : 1000,
+      )
+  }
   private media() {
     if (this.audio) return this.audio
     const audio = (this.audio = this.createAudio())
@@ -90,6 +180,7 @@ export class PlayerController {
     return audio
   }
   unlock() {
+    if (this.native) return
     const audio = this.media()
     if (!this.context && typeof AudioContext !== 'undefined') {
       this.context = new AudioContext()
@@ -178,12 +269,19 @@ export class PlayerController {
   }
   async playQueue(tracks: Track[], index = 0) {
     if (!tracks[index]) return
+    try {
+      await this.detectBackend()
+    } catch {
+      useNotice.getState().show('无法连接本地服务')
+      return
+    }
     this.unlock()
     this.failures = 0
     state.setState({ queue: tracks, index })
     await this.load(index)
   }
   private async load(index: number, seek = 0, recovering = false) {
+    if (this.native) return this.loadNative(index)
     const track = state.getState().queue[index]
     if (!track) return
     const epoch = ++this.epoch
@@ -245,6 +343,24 @@ export class PlayerController {
     await this.load(state.getState().index, this.audio.currentTime, true)
   }
   async toggle() {
+    if (this.native) {
+      try {
+        const action =
+          state.getState().status === 'playing' ? 'pause' : 'resume'
+        if (
+          state.getState().status === 'error' ||
+          state.getState().status === 'ended'
+        )
+          return this.loadNative(state.getState().index)
+        await this.nativeAction(action)
+        state.setState({ status: action === 'pause' ? 'paused' : 'playing' })
+      } catch (error) {
+        useNotice
+          .getState()
+          .show(error instanceof Error ? error.message : '播放控制失败')
+      }
+      return
+    }
     this.unlock()
     const s = state.getState()
     if (!this.audio) return
@@ -267,6 +383,10 @@ export class PlayerController {
       this.audio?.pause()
       this.finishReport(ended ? 'playend' : 'ui')
       state.setState({ status: 'ended' })
+      if (this.native) {
+        clearTimeout(this.nativeTimer)
+        void this.nativeAction('stop').catch(() => {})
+      }
       return
     }
     if (!keepFailures) this.failures = 0
@@ -281,6 +401,17 @@ export class PlayerController {
     }
   }
   seek(seconds: number) {
+    if (this.native) {
+      const value = Math.max(0, Math.min(seconds, state.getState().duration))
+      void this.nativeAction('seek', value)
+        .then(() => state.setState({ currentTime: value }))
+        .catch((error) =>
+          useNotice
+            .getState()
+            .show(error instanceof Error ? error.message : '无法调整进度'),
+        )
+      return
+    }
     if (this.audio && Number.isFinite(seconds)) {
       this.accumulate()
       this.audio.currentTime = Math.max(
@@ -291,6 +422,7 @@ export class PlayerController {
     }
   }
   async setQuality(quality: Quality) {
+    if (this.native) return
     state.setState({ quality })
     if (state.getState().index >= 0) {
       this.unlock()
@@ -299,6 +431,9 @@ export class PlayerController {
   }
   stop() {
     this.epoch++
+    clearTimeout(this.nativeTimer)
+    clearTimeout(this.volumeTimer)
+    if (this.native) void this.nativeAction('stop').catch(() => {})
     this.finishReport('ui')
     this.audio?.pause()
     this.audio?.removeAttribute('src')
@@ -312,6 +447,22 @@ export class PlayerController {
       currentTime: 0,
       duration: 0,
     })
+  }
+  setVolume(volume: number) {
+    state.getState().setVolume(volume)
+    if (this.native) {
+      clearTimeout(this.volumeTimer)
+      this.volumeTimer = setTimeout(
+        () =>
+          void this.nativeAction('volume', state.getState().volume * 100).catch(
+            (error) =>
+              useNotice
+                .getState()
+                .show(error instanceof Error ? error.message : '无法调整音量'),
+          ),
+        200,
+      )
+    }
   }
 }
 export const player = new PlayerController()

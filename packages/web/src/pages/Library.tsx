@@ -23,6 +23,7 @@ import {
 } from '../components/Music'
 import { queryClient } from '../lib/queryClient'
 import { player } from '../player/engine'
+import { useConnection } from '../api/connection'
 
 const types = Object.keys(searchTypes) as SearchType[]
 async function searchContent(
@@ -315,6 +316,7 @@ export function MinePage() {
   )
 }
 export function LoginPage() {
+  const cli = useConnection().data?.backend === 'cli'
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const [remaining, setRemaining] = useState(0)
@@ -405,14 +407,20 @@ export function LoginPage() {
             重试扫码状态
           </button>
         )}
-        <button
-          className="secondary"
-          disabled={anonymous.isPending}
-          onClick={() => anonymous.mutate()}
-        >
-          匿名体验
-        </button>
-        <p className="muted">匿名模式下部分收藏与会员内容不可用。</p>
+        {!cli && (
+          <button
+            className="secondary"
+            disabled={anonymous.isPending}
+            onClick={() => anonymous.mutate()}
+          >
+            匿名体验
+          </button>
+        )}
+        <p className="muted">
+          {cli
+            ? '通过官方 CLI 登录并读取个人音乐数据。'
+            : '匿名模式下部分收藏与会员内容不可用。'}
+        </p>
         <Link to="/">返回发现音乐 →</Link>
         <p>
           <Link to="/setup">应用配置</Link>

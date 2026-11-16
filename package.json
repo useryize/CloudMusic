@@ -14,6 +14,9 @@
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
     "e2e": "playwright test",
+    "cli:login": "pnpm -C apps/server exec ncm-cli login",
+    "cli:status": "pnpm -C apps/server exec ncm-cli login --check",
+    "cli:commands": "pnpm -C apps/server exec ncm-cli commands",
     "check:secrets": "node scripts/check-secrets.mjs"
   },
   "devDependencies": {

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { startServer } from './index'
 it('保护本地服务、交换 Cookie，凭证缺失时引导配置', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'cm-test-'))
-  const server = await startServer({ dataDir: dir })
+  const server = await startServer({ dataDir: dir, backend: 'direct' })
   const host = `127.0.0.1:${server.port}`
   const inject = (url: string, headers = {}) =>
     server.app.inject({ url, headers: { host, ...headers } })

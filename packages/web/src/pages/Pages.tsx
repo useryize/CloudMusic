@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { Disc3 } from 'lucide-react'
 import { SetupRequiredError } from '../lib/request'
 import { DeviceSetup } from '../components/DeviceSetup'
+import { useConnection } from '../api/connection'
 export function Result({
   data,
   error,
@@ -28,6 +29,7 @@ export function Result({
   return null
 }
 export function SetupPage() {
+  const cli = useConnection().data?.backend === 'cli'
   const [appId, setAppId] = useState('')
   const [privateKey, setPrivateKey] = useState('')
   const [appSecret, setAppSecret] = useState('')
@@ -92,20 +94,24 @@ export function SetupPage() {
           autoComplete="off"
           spellCheck={false}
         />
-        <label htmlFor="appSecret">AppSecret（选填，用于自动续期）</label>
-        <input
-          id="appSecret"
-          name="appSecret"
-          type="password"
-          value={appSecret}
-          onChange={(event) => setAppSecret(event.target.value)}
-          autoComplete="off"
-        />
-        <p className="muted">
-          {status.data?.hasAppSecret
-            ? '已保存 AppSecret；同一应用留空保留原值。'
-            : '未配置时，登录到期后需要重新扫码。'}
-        </p>
+        {!cli && (
+          <>
+            <label htmlFor="appSecret">AppSecret（选填，用于自动续期）</label>
+            <input
+              id="appSecret"
+              name="appSecret"
+              type="password"
+              value={appSecret}
+              onChange={(event) => setAppSecret(event.target.value)}
+              autoComplete="off"
+            />
+            <p className="muted">
+              {status.data?.hasAppSecret
+                ? '已保存 AppSecret；同一应用留空保留原值。'
+                : '未配置时，登录到期后需要重新扫码。'}
+            </p>
+          </>
+        )}
         <p className="muted">凭证保存在本机服务端，页面不读取已保存的私钥。</p>
         <button className="primary" disabled={save.isPending}>
           {save.isPending ? '保存中…' : '保存配置'}
@@ -117,7 +123,7 @@ export function SetupPage() {
           </p>
         )}
       </form>
-      <DeviceSetup />
+      {!cli && <DeviceSetup />}
     </div>
   )
 }

@@ -7,7 +7,9 @@ import type { Comment } from '../api/types'
 import { usePlayerPreferences } from '../player/store'
 import { Cover, Empty, QueryState } from '../components/Music'
 import { queryClient } from '../lib/queryClient'
+import { useConnection } from '../api/connection'
 export function CommentPage() {
+  const cli = useConnection().data?.backend === 'cli'
   const { songId = '' } = useParams()
   const [sort, setSort] = useState<'hot' | 'new'>('hot')
   const [draft, setDraft] = useState('')
@@ -31,9 +33,11 @@ export function CommentPage() {
       sort === 'new' && last.more && last.cursor ? last.cursor : undefined,
     staleTime: 60000,
   })
-  const originalId = /^\d+$/.test(songId)
-    ? songId
-    : share.match(/(?:song\?id=|\/song\/|^)(\d+)(?:\D|$)/)?.[1]
+  const originalId =
+    track?.originalId ||
+    (/^\d+$/.test(songId)
+      ? songId
+      : share.match(/(?:song\?id=|\/song\/|^)(\d+)(?:\D|$)/)?.[1])
   const threadId = reply?.threadId || (originalId ? `R_SO_4_${originalId}` : '')
   const mutation = useMutation({
     mutationFn: async () => {
@@ -81,12 +85,14 @@ export function CommentPage() {
         >
           最热
         </button>
-        <button
-          aria-current={sort === 'new' ? 'page' : undefined}
-          onClick={() => setSort('new')}
-        >
-          最新
-        </button>
+        {!cli && (
+          <button
+            aria-current={sort === 'new' ? 'page' : undefined}
+            onClick={() => setSort('new')}
+          >
+            最新
+          </button>
+        )}
       </nav>
       <QueryState
         pending={query.isPending}
@@ -144,7 +150,7 @@ export function CommentPage() {
               </button>
             </p>
           )}
-          {!/^\d+$/.test(songId) && !reply?.threadId && (
+          {!originalId && !reply?.threadId && (
             <label>
               歌曲分享链接
               <input

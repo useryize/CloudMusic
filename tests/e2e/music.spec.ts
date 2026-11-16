@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 const id = 'SONG-ENCRYPTED'
 const song = {
   id,
+  originalId: 123456,
   name: '夜航测试曲',
   duration: 6000,
   coverImgUrl: '',
@@ -30,8 +31,10 @@ wav.writeUInt16LE(2, 32)
 wav.writeUInt16LE(16, 34)
 wav.write('data', 36)
 wav.writeUInt32LE(wav.length - 44, 40)
-async function mock(page: Page, loggedIn = false) {
+async function mock(page: Page, loggedIn = false, cli = false) {
   const writes: Record<string, unknown>[] = []
+  let nativeStatus = 'stopped',
+    nativePosition = 0
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
     if (!url.pathname.startsWith('/api/')) {
@@ -41,10 +44,23 @@ async function mock(page: Page, loggedIn = false) {
     const body = route.request().postDataJSON() as {
       path?: string
       biz?: Record<string, unknown>
+      action?: string
+      value?: number
     } | null
     let data: unknown = {}
     let code = 200
-    if (url.pathname === '/api/auth/status')
+    if (url.pathname === '/api/connection')
+      data = { backend: cli ? 'cli' : 'direct', supports: {} }
+    else if (url.pathname === '/api/player/action') {
+      writes.push({ player: body })
+      if (body?.action === 'play' || body?.action === 'resume')
+        nativeStatus = 'playing'
+      if (body?.action === 'pause') nativeStatus = 'paused'
+      if (body?.action === 'seek') nativePosition = body.value ?? 0
+      data = { ok: true }
+    } else if (url.pathname === '/api/player/state')
+      data = { status: nativeStatus, position: nativePosition }
+    else if (url.pathname === '/api/auth/status')
       data = { loggedIn, anonymous: false }
     else if (url.pathname === '/api/auth/qrcode')
       data = {
@@ -129,6 +145,40 @@ test('扫码登录 → 首页 → 歌单 → 播放与歌词', async ({ page }) 
   await expect(page.getByRole('button', { name: '第二句歌词' })).toBeVisible()
   await page.screenshot({ path: 'test-results/m2-now-playing.png' })
   expect(errors).toEqual([])
+})
+test('CLI 播放控制使用本地播放器，不请求浏览器音频直链', async ({ page }) => {
+  const writes = await mock(page, true, true)
+  const requests: string[] = []
+  page.on('request', (request) =>
+    requests.push(new URL(request.url()).pathname),
+  )
+  await page.goto('/playlist/PLAYLIST-ENCRYPTED')
+  await page.getByRole('button', { name: '播放全部' }).click()
+  await expect(
+    page.getByRole('button', { name: '暂停', exact: true }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: '暂停', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: '播放', exact: true }),
+  ).toBeVisible()
+  await page.getByRole('slider', { name: '播放进度' }).fill('2')
+  await expect
+    .poll(async () =>
+      Number(await page.getByRole('slider', { name: '播放进度' }).inputValue()),
+    )
+    .toBe(2)
+  expect(
+    writes.some(
+      (item) => (item.player as { action: string })?.action === 'play',
+    ),
+  ).toBe(true)
+  expect(
+    writes.some(
+      (item) => (item.player as { action: string })?.action === 'seek',
+    ),
+  ).toBe(true)
+  expect(requests).not.toContain('/api/playback/resolve')
+  await expect(page.getByLabel('音质', { exact: true })).toHaveCount(0)
 })
 test('搜索综合分类失败不影响单曲结果', async ({ page }) => {
   await mock(page)

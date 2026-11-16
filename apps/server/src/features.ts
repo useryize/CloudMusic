@@ -1,12 +1,45 @@
 import type { FastifyInstance } from 'fastify'
-import type { createTokenStore } from '@cloudmusic/core'
+import type { Gateway } from './gateway.js'
 import { PlatformError, DeviceParameterError, unwrap } from '@cloudmusic/core'
 import { createMediaRoutes } from './media.js'
-export async function registerFeatures(
-  app: FastifyInstance,
-  auth: Awaited<ReturnType<typeof createTokenStore>>,
-) {
+export async function registerFeatures(app: FastifyInstance, auth: Gateway) {
   const media = createMediaRoutes(app)
+  app.get('/api/player/state', async () => {
+    if (!auth.player) throw new PlatformError(501, '当前使用浏览器播放器')
+    return auth.player.status()
+  })
+  app.post<{
+    Body: {
+      action: 'play' | 'pause' | 'resume' | 'stop' | 'seek' | 'volume'
+      songId?: string
+      originalId?: string
+      value?: number
+    }
+  }>(
+    '/api/player/action',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['action'],
+          additionalProperties: false,
+          properties: {
+            action: {
+              type: 'string',
+              enum: ['play', 'pause', 'resume', 'stop', 'seek', 'volume'],
+            },
+            songId: { type: 'string', maxLength: 128 },
+            originalId: { type: 'string', maxLength: 32 },
+            value: { type: 'number' },
+          },
+        },
+      },
+    },
+    async (req) => {
+      if (!auth.player) throw new PlatformError(501, '当前使用浏览器播放器')
+      return auth.player.action(req.body)
+    },
+  )
   app.get('/api/auth/status', async () => auth.status())
   app.post('/api/auth/qrcode', async () => auth.qrcode())
   app.get<{ Querystring: { key?: string } }>('/api/auth/poll', async (req) =>

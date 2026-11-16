@@ -4,6 +4,7 @@ import type { Track } from '../api/types'
 export type Quality = 'standard' | 'higher' | 'exhigh' | 'lossless'
 export type Repeat = 'off' | 'all' | 'one'
 interface PlayerPreferences {
+  backend: 'browser' | 'cli'
   queue: Track[]
   index: number
   status: 'idle' | 'resolving' | 'playing' | 'paused' | 'ended' | 'error'
@@ -19,6 +20,7 @@ interface PlayerPreferences {
 export const usePlayerPreferences = create<PlayerPreferences>()(
   persist(
     (set) => ({
+      backend: 'browser',
       queue: [],
       index: -1,
       status: 'idle',

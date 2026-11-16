@@ -19,12 +19,17 @@ import { queryClient } from '../lib/queryClient'
 import { useNotice } from '../lib/ui'
 import { getHotKeywords } from '../api/search'
 import { Result } from './Pages'
+import { useConnection } from '../api/connection'
+import { authStatus } from '../api/user'
 
 export function DiscoverPage() {
+  const connection = useConnection()
+  const cli = connection.data?.backend === 'cli'
   const cover = useQuery({
     queryKey: ['daily', 'cover'],
     queryFn: catalog.dailyCover,
     staleTime: 600000,
+    enabled: !connection.isPending && !cli,
   })
   const playlists = useQuery({
     queryKey: ['recommend', 'playlist'],
@@ -32,13 +37,16 @@ export function DiscoverPage() {
     staleTime: 600000,
   })
   const songs = useQuery({
-    queryKey: ['song', 'new'],
-    queryFn: catalog.newSongs,
+    queryKey: cli
+      ? ['daily', new Date().toLocaleDateString('sv-SE')]
+      : ['song', 'new'],
+    queryFn: cli ? catalog.dailySongs : catalog.newSongs,
     staleTime: 600000,
+    enabled: !connection.isPending,
   })
   const test = useQuery({
-    queryKey: ['search', 'hot'],
-    queryFn: getHotKeywords,
+    queryKey: ['connection', 'test', cli],
+    queryFn: cli ? authStatus : getHotKeywords,
     enabled: false,
   })
   return (
@@ -50,7 +58,7 @@ export function DiscoverPage() {
       <nav className="tabs" aria-label="发现分类">
         <span aria-current="page">个性推荐</span>
         <Link to="/square">歌单</Link>
-        <Link to="/toplist">排行榜</Link>
+        {!cli && <Link to="/toplist">排行榜</Link>}
       </nav>
       <div className="daily-banner">
         <div>
@@ -61,11 +69,14 @@ export function DiscoverPage() {
             查看每日推荐 →
           </Link>
         </div>
-        <Cover src={cover.data?.imgUrl} name="每日推荐" />
+        <Cover
+          src={cli ? songs.data?.items[0]?.coverImgUrl : cover.data?.imgUrl}
+          name="每日推荐"
+        />
       </div>
       <section>
         <div className="section-heading">
-          <h2>推荐歌单</h2>
+          <h2>{cli ? '雷达歌单' : '推荐歌单'}</h2>
           <Link to="/square">更多 ›</Link>
         </div>
         <QueryState
@@ -78,7 +89,7 @@ export function DiscoverPage() {
         )}
       </section>
       <section className="music-section">
-        <h2>最新音乐</h2>
+        <h2>{cli ? '为你推荐' : '最新音乐'}</h2>
         <QueryState
           pending={songs.isPending}
           error={songs.error}
@@ -95,7 +106,7 @@ export function DiscoverPage() {
           disabled={test.isFetching}
           onClick={() => void test.refetch()}
         >
-          测试热搜请求
+          {cli ? '检查官方 CLI 登录状态' : '测试热搜请求'}
         </button>
         <Result data={test.data} error={test.error} pending={test.isFetching} />
       </details>
@@ -103,6 +114,7 @@ export function DiscoverPage() {
   )
 }
 export function PlaylistPage() {
+  const cli = useConnection().data?.backend === 'cli'
   const { id = '' } = useParams()
   const detail = useQuery({
     queryKey: ['playlist', id, 'detail'],
@@ -152,13 +164,15 @@ export function PlaylistPage() {
               </p>
               <div className="actions">
                 <PlayAll tracks={tracks} sourceId={id} />
-                <button
-                  className="secondary"
-                  disabled={subscribe.isPending}
-                  onClick={() => subscribe.mutate()}
-                >
-                  {detail.data.subed ? '取消收藏' : '收藏'}
-                </button>
+                {!cli && (
+                  <button
+                    className="secondary"
+                    disabled={subscribe.isPending}
+                    onClick={() => subscribe.mutate()}
+                  >
+                    {detail.data.subed ? '取消收藏' : '收藏'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -185,6 +199,7 @@ export function PlaylistPage() {
   )
 }
 export function AlbumPage() {
+  const cli = useConnection().data?.backend === 'cli'
   const { id = '' } = useParams()
   const detail = useQuery({
     queryKey: ['album', id, 'detail'],
@@ -223,13 +238,15 @@ export function AlbumPage() {
               </p>
               <div className="actions">
                 <PlayAll tracks={tracks} sourceId={id} sourceType="album" />
-                <button
-                  className="secondary"
-                  disabled={subscribe.isPending}
-                  onClick={() => subscribe.mutate()}
-                >
-                  {detail.data.subed ? '取消收藏' : '收藏专辑'}
-                </button>
+                {!cli && (
+                  <button
+                    className="secondary"
+                    disabled={subscribe.isPending}
+                    onClick={() => subscribe.mutate()}
+                  >
+                    {detail.data.subed ? '取消收藏' : '收藏专辑'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -255,6 +272,7 @@ export function AlbumPage() {
   )
 }
 export function ArtistPage() {
+  const cli = useConnection().data?.backend === 'cli'
   const { id = '' } = useParams()
   const [tab, setTab] = useState('songs')
   const detail = useQuery({
@@ -295,8 +313,8 @@ export function ArtistPage() {
       )}
       <div className="tabs" role="tablist" aria-label="艺人内容">
         {[
-          ['songs', '热门歌曲'],
-          ['albums', '专辑'],
+          ['songs', cli ? '歌曲' : '热门歌曲'],
+          ...(!cli ? [['albums', '专辑']] : []),
         ].map(([key, label]) => (
           <button
             key={key}
@@ -347,17 +365,25 @@ export function ArtistPage() {
   )
 }
 export function ToplistPage() {
+  const connection = useConnection()
+  const cli = connection.data?.backend === 'cli'
   const query = useQuery({
     queryKey: ['toplist'],
     queryFn: catalog.toplists,
     staleTime: 600000,
+    enabled: !connection.isPending && !cli,
   })
   return (
     <>
       <h1>排行榜</h1>
+      {cli && (
+        <p className="muted">
+          当前官方 CLI 暂未提供排行榜，请通过搜索或每日推荐发现音乐。
+        </p>
+      )}
       <p className="muted">听见此刻，发现热门音乐</p>
       <QueryState
-        pending={query.isPending}
+        pending={query.isPending && !cli}
         error={query.error}
         retry={() => void query.refetch()}
       />

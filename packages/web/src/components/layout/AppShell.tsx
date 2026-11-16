@@ -14,6 +14,7 @@ import {
 import { useState } from 'react'
 import { PlayerBar, AuthBadge } from '../PlayerBar'
 import { useNotice } from '../../lib/ui'
+import { useConnection } from '../../api/connection'
 import s from './AppShell.module.css'
 const nav = [
   { to: '/', label: '发现音乐', icon: Compass },
@@ -22,6 +23,7 @@ const nav = [
   { to: '/toplist', label: '排行榜', icon: ListMusic },
 ]
 export function AppShell() {
+  const cli = useConnection().data?.backend === 'cli'
   const navigate = useNavigate()
   const [keyword, setKeyword] = useState('')
   const notice = useNotice((s) => s.message)
@@ -37,19 +39,21 @@ export function AppShell() {
           <Disc3 size={30} color="var(--brand)" /> 云音乐 <small>PC</small>
         </div>
         <nav aria-label="主导航">
-          {nav.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end
-              className={({ isActive }) =>
-                `${s.nav} ${isActive ? s.active : ''}`
-              }
-            >
-              <Icon size={18} strokeWidth={1.5} />
-              {label}
-            </NavLink>
-          ))}
+          {nav
+            .filter((item) => !cli || item.to !== '/toplist')
+            .map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end
+                className={({ isActive }) =>
+                  `${s.nav} ${isActive ? s.active : ''}`
+                }
+              >
+                <Icon size={18} strokeWidth={1.5} />
+                {label}
+              </NavLink>
+            ))}
           <p className={s.caption}>我的音乐</p>
           <NavLink to="/mine" className={s.nav}>
             <Heart size={18} />

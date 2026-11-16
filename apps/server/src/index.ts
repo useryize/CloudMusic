@@ -17,10 +17,12 @@ import {
   loadDevice,
   saveDevice,
   deviceFields,
+  normalizePrivateKey,
 } from '@cloudmusic/core'
 import type { Biz } from '@cloudmusic/core'
 import { cookieToken, safeEqual, trustedRequest } from './guard.js'
 import { registerFeatures, stripSecrets } from './features.js'
+import { createCliGateway } from './cliGateway.js'
 
 export async function startServer(
   options: {
@@ -28,6 +30,7 @@ export async function startServer(
     dev?: boolean
     dataDir?: string
     webRoot?: string
+    backend?: 'cli' | 'direct'
   } = {},
 ) {
   const app = Fastify({ logger: false, bodyLimit: 32768 })
@@ -47,11 +50,11 @@ export async function startServer(
     () => loadCredentials(dir),
     async () => ({ device: await loadDevice(dir, defaultDevice) }),
   )
-  const auth = await createTokenStore(
-    dir,
-    () => loadCredentials(dir),
-    core.call,
-  )
+  const backend =
+    options.backend ?? (process.env.CM_BACKEND === 'direct' ? 'direct' : 'cli')
+  const cli = backend === 'cli' ? createCliGateway() : undefined
+  const auth =
+    cli ?? (await createTokenStore(dir, () => loadCredentials(dir), core.call))
   app.addHook('onRequest', async (req, reply) => {
     reply
       .header('Cache-Control', 'no-store')
@@ -98,6 +101,18 @@ export async function startServer(
     ok: true,
     uptime: process.uptime(),
     version: '0.1.0',
+  }))
+  app.get('/api/connection', async () => ({
+    backend,
+    supports: {
+      anonymous: backend === 'direct',
+      playlistSubscription: backend === 'direct',
+      albumSubscription: backend === 'direct',
+      artistAlbums: backend === 'direct',
+      latestComments: backend === 'direct',
+      toplist: backend === 'direct',
+      browserPlayback: backend === 'direct',
+    },
   }))
   app.get('/api/setup', async () => {
     const c = await loadCredentials(dir)
@@ -158,9 +173,15 @@ export async function startServer(
               ? previous.appSecret
               : undefined),
         })
+        if (cli)
+          await cli.configure({
+            appId: req.body.appId.trim(),
+            privateKey: normalizePrivateKey(req.body.privateKey),
+          })
         await auth.logout()
         return { ok: true }
       } catch (error) {
+        if (error instanceof PlatformError) throw error
         if (error instanceof CredentialValidationError)
           return reply.code(400).send({ code: 400, msg: error.message })
         return reply.code(500).send({
